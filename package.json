@@ -2,10 +2,14 @@
   "name": "s6-panel",
   "version": "1.0.0",
   "description": "مدیریت بلوک S6",
-  "scripts": { "sync": "npx cap sync android" },
+  "scripts": {
+    "sync": "npx cap sync android"
+  },
   "dependencies": {
     "@capacitor/core": "^6.1.2",
     "@capacitor/android": "^6.1.2"
   },
-  "devDependencies": { "@capacitor/cli": "^6.1.2" }
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
 }
