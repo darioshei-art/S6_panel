@@ -1,0 +1,6 @@
+{
+  "appId": "com.dariosh.s6panel",
+  "appName": "پنل بلوک S6",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
