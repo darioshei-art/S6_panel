@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>مدیریت بلوک S6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --navy:#0c1220; --navy2:#121a2e; --card:#151d33; --card2:#1a2440;
+  --gold:#e0b84d; --gold-lt:#f5d87a; --blue:#3b82f6; --blue-lt:#60a5fa;
+  --text:#eef1f8; --muted:#8a93ab; --line:rgba(224,184,77,.18);
+  --radius:20px; --radius-sm:14px;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+html,body{overflow-x:hidden;}
+body{
+  font-family:'Vazirmatn',Tahoma,sans-serif; color:var(--text); min-height:100vh;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(59,130,246,.18), transparent 60%),
+    radial-gradient(1000px 500px at 110% 10%, rgba(224,184,77,.12), transparent 60%),
+    linear-gradient(180deg,#070a12,#0c1220 40%,#0a0e1a);
+  font-size:14px; line-height:1.6;
+}
+.hidden{display:none!important;}
+::selection{background:var(--gold); color:#111;}
+input,select,button,textarea{font-family:inherit; font-size:14px;}
+input,select,textarea{
+  width:100%; padding:11px 14px; margin:6px 0; border-radius:var(--radius-sm);
+  border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.04); color:var(--text);
+  transition:border-color .2s var(--ease), background .2s var(--ease);
+}
+input::placeholder{color:var(--muted);}
+input:focus,select:focus,textarea:focus{outline:none; border-color:var(--gold); background:rgba(224,184,77,.06);}
+button{
+  cursor:pointer; border:none; border-radius:var(--radius-sm); padding:12px 16px; margin:6px 0;
+  font-weight:600; font-size:13.5px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-lt)); color:#1a1408;
+  transition:transform .15s var(--ease), box-shadow .2s var(--ease), opacity .15s;
+  box-shadow:0 4px 14px rgba(224,184,77,.18);
+}
+button:active{transform:scale(.97); box-shadow:0 2px 6px rgba(224,184,77,.15);}
+button.secondary{background:linear-gradient(135deg,#1d4ed8,var(--blue-lt)); color:#fff; box-shadow:0 4px 14px rgba(59,130,246,.2);}
+button.ghost{background:rgba(255,255,255,.05); color:var(--text); box-shadow:none; border:1px solid rgba(255,255,255,.1);}
+button.danger{background:linear-gradient(135deg,#7f1d1d,#b91c1c); color:#fff; box-shadow:0 4px 14px rgba(185,28,28,.2);}
+button.sm{padding:7px 12px; font-size:12px; margin:4px 3px;}
+h1,h2,h3{color:var(--gold-lt); font-weight:700;}
+h2{font-size:16px; margin-bottom:10px; display:flex; align-items:center; gap:7px;}
+h2 .ic{font-size:15px; opacity:.9;}
+h3{font-size:13.5px; margin-bottom:6px; color:var(--gold);}
+
+/* ---------- LOGIN ---------- */
+#loginScreen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  background:
+    radial-gradient(700px 400px at 50% 0%, rgba(59,130,246,.16), transparent 65%),
+    linear-gradient(160deg,#070a12,#0e1526 55%,#0a0e1a);
+}
+.loginCard{
+  width:100%; max-width:360px; padding:30px 24px 26px; border-radius:24px;
+  background:linear-gradient(160deg,rgba(26,36,64,.9),rgba(18,26,46,.9));
+  border:1px solid var(--line); box-shadow:0 20px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+  animation:riseIn .6s var(--ease);
+}
+@keyframes riseIn{from{opacity:0; transform:translateY(24px) scale(.97);} to{opacity:1; transform:translateY(0) scale(1);}}
+.logoCircle{
+  width:66px; height:66px; margin:0 auto 14px; border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--blue));
+  display:flex; align-items:center; justify-content:center; font-size:26px;
+  box-shadow:0 8px 24px rgba(224,184,77,.25);
+  animation:pop .6s var(--ease) .1s both;
+}
+@keyframes pop{from{transform:scale(.6); opacity:0;} to{transform:scale(1); opacity:1;}}
+.loginCard h1{text-align:center; font-size:18px; letter-spacing:.3px;}
+.loginSub{text-align:center; color:var(--muted); font-size:12.5px; margin:4px 0 20px;}
+.loginCard input{padding:13px 14px; font-size:14.5px; background:rgba(255,255,255,.035);}
+.loginCard button{width:100%; padding:13px; font-size:14.5px; margin-top:10px; letter-spacing:.2px;}
+#loginErr{color:#ff8080; text-align:center; font-size:12.5px; margin-top:10px; min-height:16px;}
+
+/* ---------- SHELL ---------- */
+#topbar{
+  display:flex; align-items:center; justify-content:space-between; padding:13px 16px;
+  background:linear-gradient(180deg,rgba(12,18,32,.96),rgba(12,18,32,.85));
+  backdrop-filter:blur(10px); border-bottom:1px solid var(--line);
+  position:sticky; top:0; z-index:20;
+}
+#menuBtn{background:transparent; box-shadow:none; font-size:19px; color:var(--gold-lt); padding:6px 8px; border-radius:10px;}
+#menuBtn:active{background:rgba(255,255,255,.06);}
+#dateBadge{font-size:11.5px; color:var(--blue-lt); font-weight:600; background:rgba(59,130,246,.1); padding:5px 12px; border-radius:20px;}
+.brand{font-weight:800; color:var(--gold); font-size:14px; letter-spacing:.5px;}
+
+#overlay{position:fixed; inset:0; background:rgba(4,6,12,.6); backdrop-filter:blur(2px); z-index:25; opacity:0; pointer-events:none; transition:opacity .25s var(--ease);}
+#overlay.show{opacity:1; pointer-events:auto;}
+#drawer{
+  position:fixed; top:0; right:-84%; width:78%; max-width:290px; height:100%;
+  background:linear-gradient(180deg,#0f1526,#0a0e1a); border-left:1px solid var(--line);
+  transition:right .32s var(--ease); z-index:30; overflow-y:auto; padding:20px 14px;
+}
+#drawer.open{right:0;}
+.drawerHead{display:flex; align-items:center; gap:10px; margin-bottom:16px; padding:0 6px;}
+.drawerHead .logoCircle{width:38px; height:38px; font-size:16px; margin:0;}
+.drawerHead b{font-size:13.5px; color:var(--gold-lt);}
+.menuItem{
+  display:flex; align-items:center; gap:11px; padding:12px 12px; border-radius:14px; margin:3px 0;
+  cursor:pointer; color:var(--text); font-weight:500; font-size:13.5px;
+  transition:background .18s var(--ease), transform .12s;
+}
+.menuItem .ic{font-size:15px; width:20px; text-align:center; opacity:.9;}
+.menuItem:active{transform:scale(.98);}
+.menuItem.active{background:linear-gradient(90deg,rgba(224,184,77,.14),rgba(59,130,246,.08)); color:var(--gold-lt);}
+
+.container{padding:16px 14px 40px; max-width:480px; margin:0 auto; animation:fadeUp .35s var(--ease);}
+@keyframes fadeUp{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+
+.card{
+  background:linear-gradient(160deg,var(--card2),var(--card));
+  border:1px solid var(--line); border-radius:var(--radius); padding:16px;
+  margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+
+.fundBox{
+  background:linear-gradient(135deg,#1c1706,#0e1526); border:1px solid rgba(224,184,77,.3);
+  border-radius:22px; padding:22px 18px; text-align:center; margin-bottom:16px;
+  box-shadow:0 0 30px rgba(224,184,77,.08), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.fundBox .lbl{font-size:11.5px; color:var(--blue-lt); font-weight:600; letter-spacing:.3px;}
+.fundBox .amount{font-size:26px; color:var(--gold-lt); font-weight:800; margin-top:6px;}
+
+.unitCard{
+  background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.06);
+  border-right:3px solid var(--gold); border-radius:16px; padding:12px 14px; margin:8px 0;
+  font-size:13px; transition:transform .15s var(--ease);
+}
+.unitCard b{color:var(--gold-lt);}
+.unitCard .row2{display:flex; justify-content:space-between; margin-top:6px; font-size:12px; color:var(--muted);}
+.unitCard .stat{font-weight:700;}
+.stat.red{color:#ff8a8a;} .stat.green{color:#7ee0a8;}
+
+table{width:100%; border-collapse:collapse; margin-top:10px; font-size:12px; overflow:hidden; border-radius:12px;}
+th,td{padding:8px 6px; text-align:center; border-bottom:1px solid rgba(255,255,255,.06);}
+th{background:rgba(224,184,77,.08); color:var(--gold-lt); font-weight:600; font-size:11.5px;}
+td{color:var(--text);}
+.tableWrap{overflow-x:auto; border-radius:14px; border:1px solid rgba(255,255,255,.06);}
+
+.row{display:flex; gap:8px;}
+.row>*{flex:1;}
+canvas.chartCanvas{background:rgba(255,255,255,.02); border-radius:16px; padding:10px; margin:10px 0; border:1px solid rgba(255,255,255,.06);}
+.welcome{font-size:13px; margin-bottom:12px; color:var(--muted);}
+.welcome b{color:var(--gold-lt);}
+
+.tag{display:inline-block; padding:3px 10px; border-radius:20px; font-size:10.5px; font-weight:700;}
+.tag.settled{background:rgba(34,197,94,.15); color:#86efac;}
+.tag.pending{background:rgba(239,68,68,.15); color:#fca5a5;}
+
+.segWrap{display:flex; gap:6px; background:rgba(255,255,255,.03); padding:4px; border-radius:14px; margin:8px 0 4px;}
+.segBtn{flex:1; text-align:center; padding:9px 4px; border-radius:11px; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; transition:.2s var(--ease);}
+.segBtn.active{background:linear-gradient(135deg,var(--gold),var(--gold-lt)); color:#1a1408; box-shadow:0 3px 10px rgba(224,184,77,.25);}
+
+.minutesCard{display:flex; gap:10px; align-items:center; background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:8px; margin:8px 0;}
+.thumb{width:52px; height:52px; object-fit:cover; border-radius:10px; border:1px solid var(--line);}
+.section-title{margin:14px 0 8px; font-size:13px; color:var(--gold); font-weight:700; display:flex; align-items:center; gap:6px;}
+.empty{color:var(--muted); font-size:12.5px; text-align:center; padding:16px 0;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="loginCard">
+    <div class="logoCircle">🏢</div>
+    <h1>مدیریت بلوک S6</h1>
+    <p class="loginSub">ورود به پنل مدیریت ساختمان</p>
+    <input id="loginUser" placeholder="نام کاربری">
+    <input id="loginPass" type="password" placeholder="رمز عبور">
+    <button onclick="doLogin()">ورود به پنل</button>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <div id="topbar">
+    <button id="menuBtn" onclick="toggleDrawer()">☰</button>
+    <div id="dateBadge"></div>
+    <div class="brand">S6</div>
+  </div>
+
+  <div id="overlay" onclick="toggleDrawer()"></div>
+  <div id="drawer">
+    <div class="drawerHead"><div class="logoCircle">🏢</div><b>مدیریت بلوک S6</b></div>
+    <div class="menuItem" data-p="dashboard" onclick="showPage('dashboard')"><span class="ic">📊</span> داشبورد مالی</div>
+    <div class="menuItem" data-p="units" onclick="showPage('units')"><span class="ic">🏠</span> ثبت و ویرایش واحدها</div>
+    <div class="menuItem" data-p="entry" onclick="showPage('entry')"><span class="ic">💰</span> ثبت بدهی و واریزی</div>
+    <div class="menuItem" data-p="debts" onclick="showPage('debts')"><span class="ic">🧾</span> مدیریت بدهی‌ها</div>
+    <div class="menuItem" data-p="group" onclick="showPage('group')"><span class="ic">👥</span> شارژ گروهی</div>
+    <div class="menuItem" data-p="reports" onclick="showPage('reports')"><span class="ic">📑</span> گزارش‌گیری</div>
+    <div class="menuItem" data-p="sync" onclick="showPage('sync')"><span class="ic">🔄</span> همگام‌سازی صندوق</div>
+    <div class="menuItem" data-p="plans" onclick="showPage('plans')"><span class="ic">🗓️</span> برنامه‌های آینده</div>
+    <div class="menuItem" data-p="minutes" onclick="showPage('minutes')"><span class="ic">📝</span> صورت‌جلسه‌ها</div>
+    <div class="menuItem" onclick="logout()"><span class="ic">🚪</span> خروج</div>
+  </div>
+
+  <div class="container" id="pageContainer"></div>
+</div>
+
+<script>
+/* ---------- JALALI DATE ---------- */
+function toJalali(gy,gm,gd){
+  var g_d_m=[0,31,59,90,120,151,181,212,243,273,304,334];
+  var jy = (gy<=1600)?0:979; gy -= (gy<=1600)?621:1600;
+  var gy2 = (gm>2)?(gy+1):gy;
+  var days = (365*gy) + parseInt((gy2+3)/4) - parseInt((gy2+99)/100) + parseInt((gy2+399)/400) - 80 + gd + g_d_m[gm-1];
+  jy += 33*parseInt(days/12053); days %= 12053;
+  jy += 4*parseInt(days/1461); days %= 1461;
+  if(days>365){ jy += parseInt((days-1)/365); days=(days-1)%365; }
+  var jm = (days<186)?1+parseInt(days/31):7+parseInt((days-186)/30);
+  var jd = 1+((days<186)?(days%31):((days-186)%30));
+  return [jy,jm,jd];
+}
+function faDate(dstr){
+  if(!dstr) return '-';
+  var p=dstr.split('-'); if(p.length<3) return dstr;
+  var j=toJalali(+p[0],+p[1],+p[2]);
+  var mnames=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  return j[2]+' '+mnames[j[1]-1]+' '+j[0];
+}
+function faDateShort(dstr){
+  if(!dstr) return '-';
+  var p=dstr.split('-'); if(p.length<3) return dstr;
+  var j=toJalali(+p[0],+p[1],+p[2]);
+  return j[0]+'/'+String(j[1]).padStart(2,'0')+'/'+String(j[2]).padStart(2,'0');
+}
+
+/* ---------- DATA LAYER ---------- */
+const DB_KEY='s6_data_v1';
+function loadDB(){
+  let d=localStorage.getItem(DB_KEY);
+  if(!d){ d={units:[], entries:[], repairs:[], fund:0, plans:[], minutes:[]}; saveDB(d); }
+  else { d=JSON.parse(d); if(!d.repairs) d.repairs=[]; }
+  return d;
+}
+function saveDB(d){ localStorage.setItem(DB_KEY, JSON.stringify(d)); }
+let DB = loadDB();
+function fmt(n){ n=Number(n||0); return n.toLocaleString('en-US')+' تومان'; }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+/* ---------- AUTH ---------- */
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value.trim();
+  if(u==='DARIOSHEI1009' && p==='GANAWA98'){
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('dateBadge').textContent='📅 '+faDate(todayStr());
+    showPage('dashboard');
+  } else {
+    document.getElementById('loginErr').textContent='نام کاربری یا رمز عبور اشتباه است';
+  }
+}
+function logout(){ location.reload(); }
+function toggleDrawer(){
+  document.getElementById('drawer').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+
+/* ---------- ROUTER ---------- */
+function showPage(name){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.menuItem').forEach(m=>m.classList.toggle('active', m.dataset.p===name));
+  const c=document.getElementById('pageContainer');
+  c.style.animation='none'; void c.offsetWidth; c.style.animation='';
+  c.innerHTML='';
+  ({
+    dashboard: renderDashboard, units: renderUnits, entry: renderEntry,
+    debts: renderDebts, group: renderGroup, reports: renderReports,
+    sync: renderSync, plans: renderPlans, minutes: renderMinutes
+  }[name])(c);
+}
+
+/* ---------- HELPERS ---------- */
+function unitTotals(unitNo){
+  let debt=0, deposit=0;
+  DB.entries.filter(e=>e.unit==unitNo).forEach(e=>{
+    if(!e.settled) debt += Number(e.ownerDebt||0)+Number(e.tenantDebt||0);
+    deposit += Number(e.ownerDeposit||0)+Number(e.tenantDeposit||0);
+  });
+  return {debt, deposit};
+}
+
+/* ---------- DASHBOARD ---------- */
+function renderDashboard(c){
+  c.innerHTML = `
+    <p class="welcome">خوش آمدید، <b>مدیر بلوک S6</b> 👋</p>
+    <div class="fundBox"><div class="lbl">موجودی صندوق</div><div class="amount">${fmt(DB.fund)}</div></div>
+    <div class="section-title">🏠 وضعیت واحدها</div>
+    <div id="unitsList"></div>
+    <div class="section-title">📈 نمودار واریزی‌ها</div>
+    <canvas class="chartCanvas" id="depChart" height="170"></canvas>
+    <div class="row"><button class="secondary sm" onclick="downloadChart('depChart','pdf')">⬇ PDF</button><button class="ghost sm" onclick="downloadChart('depChart','jpeg')">⬇ JPEG</button></div>
+    <div class="section-title">📉 نمودار بدهی‌ها</div>
+    <canvas class="chartCanvas" id="debtChart" height="170"></canvas>
+    <div class="row"><button class="secondary sm" onclick="downloadChart('debtChart','pdf')">⬇ PDF</button><button class="ghost sm" onclick="downloadChart('debtChart','jpeg')">⬇ JPEG</button></div>
+  `;
+  const list=document.getElementById('unitsList');
+  if(DB.units.length===0) list.innerHTML='<div class="empty">هنوز واحدی ثبت نشده است.</div>';
+  DB.units.forEach(u=>{
+    const t=unitTotals(u.no);
+    list.innerHTML += `<div class="unitCard">
+      <b>واحد ${u.no}</b> — مالک: ${u.owner||'-'} · مستاجر: ${u.tenant||'-'}
+      <div class="row2"><span>بدهی: <span class="stat red">${fmt(t.debt)}</span></span><span>واریزی: <span class="stat green">${fmt(t.deposit)}</span></span></div>
+    </div>`;
+  });
+  const labels=DB.units.map(u=>'واحد '+u.no);
+  const deps=DB.units.map(u=>unitTotals(u.no).deposit);
+  const debts=DB.units.map(u=>unitTotals(u.no).debt);
+  const gridColor='rgba(255,255,255,.06)', tickColor='#8a93ab';
+  new Chart(document.getElementById('depChart'),{type:'bar',data:{labels,datasets:[{label:'واریزی',data:deps,backgroundColor:'#3b82f6',borderRadius:6}]},options:{plugins:{legend:{labels:{color:tickColor}}},scales:{x:{ticks:{color:tickColor},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{color:gridColor}}}}});
+  new Chart(document.getElementById('debtChart'),{type:'bar',data:{labels,datasets:[{label:'بدهی',data:debts,backgroundColor:'#e0b84d',borderRadius:6}]},options:{plugins:{legend:{labels:{color:tickColor}}},scales:{x:{ticks:{color:tickColor},grid:{color:gridColor}},y:{ticks:{color:tickColor},grid:{color:gridColor}}}}});
+}
+function downloadChart(id,type){
+  const canvas=document.getElementById(id);
+  if(type==='jpeg'){
+    const a=document.createElement('a'); a.href=canvas.toDataURL('image/jpeg',1.0); a.download=id+'.jpeg'; a.click();
+  } else {
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF();
+    pdf.addImage(canvas.toDataURL('image/jpeg',1.0),'JPEG',10,10,180,90);
+    pdf.save(id+'.pdf');
+  }
+}
+
+/* ---------- UNITS ---------- */
+function renderUnits(c){
+  c.innerHTML=`
+    <h2><span class="ic">🏠</span> ثبت و ویرایش واحدها</h2>
+    <div class="card">
+      <input id="u_no" placeholder="شماره واحد">
+      <input id="u_owner" placeholder="نام مالک">
+      <input id="u_tenant" placeholder="نام مستاجر">
+      <div class="row"><input id="u_ownerPhone" placeholder="تلفن مالک"><input id="u_tenantPhone" placeholder="تلفن مستاجر"></div>
+      <input id="u_charge" placeholder="شارژ بر متر (تومان)">
+      <button onclick="saveUnit()">ذخیره واحد</button>
+    </div>
+    <div class="tableWrap" id="unitTableWrap"></div>
+  `;
+  renderUnitTable();
+}
+function renderUnitTable(){
+  let rows=DB.units.map((u,i)=>`<tr>
+    <td>${u.no}</td><td>${u.owner||''}</td><td>${u.tenant||''}</td><td>${fmt(u.charge)}</td>
+    <td><button class="sm ghost" onclick="editUnit(${i})">✏</button><button class="sm danger" onclick="deleteUnit(${i})">🗑</button></td>
+  </tr>`).join('');
+  document.getElementById('unitTableWrap').innerHTML= DB.units.length? `
+    <table><tr><th>واحد</th><th>مالک</th><th>مستاجر</th><th>شارژ/متر</th><th></th></tr>${rows}</table>` : '<div class="empty">واحدی ثبت نشده.</div>';
+}
+function saveUnit(){
+  const no=document.getElementById('u_no').value.trim();
+  if(!no) return alert('شماره واحد را وارد کنید');
+  let existing=DB.units.find(u=>u.no===no);
+  const data={no, owner:document.getElementById('u_owner').value, tenant:document.getElementById('u_tenant').value,
+    ownerPhone:document.getElementById('u_ownerPhone').value, tenantPhone:document.getElementById('u_tenantPhone').value,
+    charge:document.getElementById('u_charge').value};
+  if(existing) Object.assign(existing,data); else DB.units.push(data);
+  saveDB(DB); renderUnits(document.getElementById('pageContainer'));
+}
+function editUnit(i){
+  const u=DB.units[i];
+  document.getElementById('u_no').value=u.no;
+  document.getElementById('u_owner').value=u.owner;
+  document.getElementById('u_tenant').value=u.tenant;
+  document.getElementById('u_ownerPhone').value=u.ownerPhone;
+  document.getElementById('u_tenantPhone').value=u.tenantPhone;
+  document.getElementById('u_charge').value=u.charge;
+}
+function deleteUnit(i){ if(confirm('حذف شود؟')){ DB.units.splice(i,1); saveDB(DB); renderUnits(document.getElementById('pageContainer')); } }
+
+/* ---------- ENTRY ---------- */
+function renderEntry(c){
+  const opts=DB.units.map(u=>`<option value="${u.no}">واحد ${u.no}</option>`).join('');
+  c.innerHTML=`
+    <h2><span class="ic">💰</span> ثبت بدهی و واریزی</h2>
+    <div class="card">
+      <select id="e_unit">${opts||'<option value="">ابتدا واحد ثبت کنید</option>'}</select>
+      <input id="e_date" type="date" value="${todayStr()}">
+      <div class="row"><input id="e_ownerDebt" placeholder="بدهی مالک"><input id="e_tenantDebt" placeholder="بدهی مستاجر"></div>
+      <div class="row"><input id="e_ownerDeposit" placeholder="واریزی مالک"><input id="e_tenantDeposit" placeholder="واریزی مستاجر"></div>
+      <input id="e_repair" placeholder="هزینه تعمیرات (از صندوق کسر می‌شود)">
+      <input id="e_repairNote" placeholder="توضیح تعمیرات (اختیاری)">
+      <button onclick="saveEntry()">ثبت تراکنش</button>
+    </div>
+  `;
+}
+function saveEntry(){
+  const unit=document.getElementById('e_unit').value;
+  const date=document.getElementById('e_date').value||todayStr();
+  const ownerDebt=+document.getElementById('e_ownerDebt').value||0;
+  const tenantDebt=+document.getElementById('e_tenantDebt').value||0;
+  const ownerDeposit=+document.getElementById('e_ownerDeposit').value||0;
+  const tenantDeposit=+document.getElementById('e_tenantDeposit').value||0;
+  const repair=+document.getElementById('e_repair').value||0;
+  const repairNote=document.getElementById('e_repairNote').value;
+  if(unit && (ownerDebt||tenantDebt||ownerDeposit||tenantDeposit)){
+    DB.entries.push({unit,date,ownerDebt,tenantDebt,ownerDeposit,tenantDeposit,settled:false});
+    DB.fund += ownerDeposit+tenantDeposit;
+  }
+  if(repair>0){
+    DB.repairs.push({date, amount:repair, note:repairNote, unit:unit||''});
+    DB.fund -= repair;
+  }
+  saveDB(DB); alert('ثبت شد ✅'); showPage('entry');
+}
+
+/* ---------- DEBTS ---------- */
+function renderDebts(c){
+  const opts=`<option value="">همه واحدها</option>`+DB.units.map(u=>`<option value="${u.no}">واحد ${u.no}</option>`).join('');
+  c.innerHTML=`<h2><span class="ic">🧾</span> مدیریت بدهی‌ها</h2><select id="d_filter" onchange="renderDebtList()">${opts}</select><div id="debtList"></div>`;
+  renderDebtList();
+}
+function renderDebtList(){
+  const f=document.getElementById('d_filter').value;
+  let rows='';
+  DB.entries.forEach((e,i)=>{
+    if(f && e.unit!=f) return;
+    const total=e.ownerDebt+e.tenantDebt;
+    if(total<=0) return;
+    rows+=`<div class="unitCard">
+      واحد ${e.unit} — ${faDateShort(e.date)} — بدهی: ${fmt(total)}
+      <span class="tag ${e.settled?'settled':'pending'}">${e.settled?'تسویه شده':'در انتظار'}</span>
+      <div class="row2"><button class="sm secondary" onclick="settleDebt(${i})">✔ تسویه شد</button><button class="sm danger" onclick="deleteDebt(${i})">🗑 حذف</button></div>
+    </div>`;
+  });
+  document.getElementById('debtList').innerHTML=rows||'<div class="empty">بدهی‌ای یافت نشد.</div>';
+}
+function settleDebt(i){ DB.entries[i].settled=true; saveDB(DB); renderDebtList(); }
+function deleteDebt(i){ if(confirm('حذف شود؟')){ DB.entries.splice(i,1); saveDB(DB); renderDebtList(); } }
+
+/* ---------- GROUP CHARGE ---------- */
+function renderGroup(c){
+  c.innerHTML=`
+    <h2><span class="ic">👥</span> شارژ گروهی پیشرفته</h2>
+    <div class="card">
+      <h3>روش ۱: بر اساس شارژ ثبت‌شده هر واحد</h3>
+      <input id="g_note1" placeholder="توضیحات (مثلاً شارژ مهرماه)">
+      <button onclick="applyPerUnitCharge()">اعمال بر اساس شارژ هر واحد</button>
+    </div>
+    <div class="card">
+      <h3>روش ۲: مبلغ ثابت برای همه</h3>
+      <input id="g_amount" placeholder="مبلغ ثابت">
+      <input id="g_note2" placeholder="توضیحات">
+      <button class="secondary" onclick="applyFlatCharge()">اعمال مبلغ ثابت برای همه</button>
+    </div>
+  `;
+}
+function applyPerUnitCharge(){
+  const note=document.getElementById('g_note1').value;
+  DB.units.forEach(u=>DB.entries.push({unit:u.no, date:todayStr(), ownerDebt:+u.charge||0, tenantDebt:0, ownerDeposit:0, tenantDeposit:0, settled:false, note}));
+  saveDB(DB); alert('شارژ گروهی اعمال شد ✅');
+}
+function applyFlatCharge(){
+  const amt=+document.getElementById('g_amount').value||0;
+  const note=document.getElementById('g_note2').value;
+  DB.units.forEach(u=>DB.entries.push({unit:u.no, date:todayStr(), ownerDebt:amt, tenantDebt:0, ownerDeposit:0, tenantDeposit:0, settled:false, note}));
+  saveDB(DB); alert('شارژ گروهی اعمال شد ✅');
+}
+
+/* ---------- REPORTS (rebuilt) ---------- */
+let reportMode='unit', lastReport=[];
+function renderReports(c){
+  c.innerHTML=`
+    <h2><span class="ic">📑</span> گزارش‌گیری</h2>
+    <div class="segWrap">
+      <div class="segBtn active" data-m="unit" onclick="setReportMode('unit')">بر اساس واحد</div>
+      <div class="segBtn" data-m="balance" onclick="setReportMode('balance')">تعمیرات و بیلان</div>
+      <div class="segBtn" data-m="keyword" onclick="setReportMode('keyword')">جستجوی کلمه</div>
+    </div>
+    <div class="card" id="reportControls"></div>
+    <div id="reportOut"></div>
+    <div class="row" id="reportDlBtns" style="display:none;">
+      <button class="secondary sm" onclick="exportReport('pdf')">⬇ دانلود PDF</button>
+      <button class="ghost sm" onclick="exportReport('jpeg')">⬇ دانلود JPEG</button>
+    </div>
+  `;
+  setReportMode('unit');
+}
+function setReportMode(m){
+  reportMode=m;
+  document.querySelectorAll('.segBtn').forEach(b=>b.classList.toggle('active', b.dataset.m===m));
+  const rc=document.getElementById('reportControls');
+  const opts=DB.units.map(u=>`<option value="${u.no}">واحد ${u.no}</option>`).join('');
+  if(m==='unit'){
+    rc.innerHTML=`<select id="r_unit">${opts||'<option value="">واحدی ثبت نشده</option>'}</select><button onclick="runReport()">اجرای گزارش</button>`;
+  } else if(m==='balance'){
+    rc.innerHTML=`<p style="font-size:12.5px;color:var(--muted);margin-bottom:6px;">جمع واریزی‌ها، هزینه‌های تعمیرات و بیلان کلی صندوق</p><button onclick="runReport()">اجرای گزارش</button>`;
+  } else {
+    rc.innerHTML=`<input id="r_keyword" placeholder="نام واحد، توضیح یا هر کلمه‌ای..."><button onclick="runReport()">جستجو</button>`;
+  }
+  document.getElementById('reportOut').innerHTML='';
+  document.getElementById('reportDlBtns').style.display='none';
+}
+function runReport(){
+  const out=document.getElementById('reportOut');
+  let html='';
+  if(reportMode==='unit'){
+    const unit=document.getElementById('r_unit').value;
+    if(!unit){ out.innerHTML='<div class="empty">واحدی انتخاب نشده.</div>'; return; }
+    const rows=DB.entries.filter(e=>e.unit==unit);
+    const reps=DB.repairs.filter(r=>r.unit==unit);
+    const t=unitTotals(unit);
+    html=`<div class="unitCard"><b>گزارش واحد ${unit}</b><div class="row2"><span>بدهی فعلی: <span class="stat red">${fmt(t.debt)}</span></span><span>واریزی کل: <span class="stat green">${fmt(t.deposit)}</span></span></div></div>`;
+    html+='<div class="tableWrap"><table><tr><th>تاریخ</th><th>بدهی</th><th>واریزی</th><th>وضعیت</th></tr>';
+    rows.forEach(e=>{ html+=`<tr><td>${faDateShort(e.date)}</td><td>${fmt(e.ownerDebt+e.tenantDebt)}</td><td>${fmt(e.ownerDeposit+e.tenantDeposit)}</td><td>${e.settled?'تسویه':'باز'}</td></tr>`; });
+    html+='</table></div>';
+    if(reps.length){ html+='<div class="section-title">🛠 تعمیرات مرتبط</div><div class="tableWrap"><table><tr><th>تاریخ</th><th>مبلغ</th><th>توضیح</th></tr>';
+      reps.forEach(r=>{ html+=`<tr><td>${faDateShort(r.date)}</td><td>${fmt(r.amount)}</td><td>${r.note||'-'}</td></tr>`; });
+      html+='</table></div>'; }
+    lastReport=[['واحد',unit],['بدهی',fmt(t.debt)],['واریزی',fmt(t.deposit)]].concat(rows.map(e=>[faDateShort(e.date),fmt(e.ownerDebt+e.tenantDebt),fmt(e.ownerDeposit+e.tenantDeposit)]));
+  } else if(reportMode==='balance'){
+    const totalDeposit=DB.entries.reduce((s,e)=>s+e.ownerDeposit+e.tenantDeposit,0);
+    const totalRepair=DB.repairs.reduce((s,r)=>s+Number(r.amount||0),0);
+    html=`<div class="card"><div class="row2"><span>کل واریزی‌ها</span><span class="stat green">${fmt(totalDeposit)}</span></div>
+      <div class="row2"><span>کل هزینه تعمیرات</span><span class="stat red">${fmt(totalRepair)}</span></div>
+      <div class="row2"><span>موجودی فعلی صندوق</span><span class="stat">${fmt(DB.fund)}</span></div></div>`;
+    html+='<div class="section-title">🛠 لیست تعمیرات</div><div class="tableWrap"><table><tr><th>تاریخ</th><th>واحد</th><th>مبلغ</th><th>توضیح</th></tr>';
+    DB.repairs.forEach(r=>{ html+=`<tr><td>${faDateShort(r.date)}</td><td>${r.unit||'-'}</td><td>${fmt(r.amount)}</td><td>${r.note||'-'}</td></tr>`; });
+    html+='</table></div>';
+    lastReport=[['کل واریزی',fmt(totalDeposit)],['کل تعمیرات',fmt(totalRepair)],['موجودی صندوق',fmt(DB.fund)]];
+  } else {
+    const kw=(document.getElementById('r_keyword').value||'').trim();
+    const rows=DB.entries.filter(e=>String(e.unit).includes(kw)||(e.note||'').includes(kw));
+    const reps=DB.repairs.filter(r=>String(r.unit).includes(kw)||(r.note||'').includes(kw));
+    html='<div class="tableWrap"><table><tr><th>نوع</th><th>واحد</th><th>تاریخ</th><th>مبلغ</th><th>توضیح</th></tr>';
+    rows.forEach(e=>{ html+=`<tr><td>تراکنش</td><td>${e.unit}</td><td>${faDateShort(e.date)}</td><td>${fmt(e.ownerDebt+e.tenantDebt+e.ownerDeposit+e.tenantDeposit)}</td><td>${e.note||'-'}</td></tr>`; });
+    reps.forEach(r=>{ html+=`<tr><td>تعمیرات</td><td>${r.unit||'-'}</td><td>${faDateShort(r.date)}</td><td>${fmt(r.amount)}</td><td>${r.note||'-'}</td></tr>`; });
+    html+='</table></div>';
+    if(!rows.length && !reps.length) html='<div class="empty">نتیجه‌ای یافت نشد.</div>';
+    lastReport=rows.map(e=>['تراکنش',e.unit,faDateShort(e.date),fmt(e.ownerDebt+e.tenantDebt+e.ownerDeposit+e.tenantDeposit),e.note||'-'])
+      .concat(reps.map(r=>['تعمیرات',r.unit||'-',faDateShort(r.date),fmt(r.amount),r.note||'-']));
+  }
+  out.innerHTML=html;
+  document.getElementById('reportDlBtns').style.display= lastReport.length? 'flex':'none';
+}
+function exportReport(type){
+  if(!lastReport.length) return alert('ابتدا گزارش را اجرا کنید');
+  if(type==='jpeg'){
+    const rowH=28, padTop=50, w=640;
+    const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=padTop+rowH*lastReport.length+20;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#0c1220'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#e0b84d'; ctx.font='bold 18px sans-serif'; ctx.textAlign='right';
+    ctx.fillText('گزارش مدیریت بلوک S6',w-20,32);
+    ctx.font='13px sans-serif';
+    lastReport.forEach((r,i)=>{
+      ctx.fillStyle= i%2? 'rgba(255,255,255,.04)':'transparent';
+      ctx.fillRect(10,padTop+i*rowH-18,w-20,rowH);
+      ctx.fillStyle='#eef1f8';
+      ctx.fillText(r.join('   |   '), w-20, padTop+i*rowH);
+    });
+    const a=document.createElement('a'); a.href=canvas.toDataURL('image/jpeg',0.95); a.download='report.jpeg'; a.click();
+  } else {
+    const {jsPDF}=window.jspdf; const pdf=new jsPDF();
+    pdf.setFontSize(14); pdf.text('S6 Block Management Report', 15, 15);
+    pdf.setFontSize(10);
+    let y=28;
+    lastReport.forEach(r=>{
+      pdf.text(r.join('  |  '), 15, y);
+      y+=7;
+      if(y>280){ pdf.addPage(); y=15; }
+    });
+    pdf.save('report.pdf');
+  }
+}
+
+/* ---------- FUND SYNC ---------- */
+function renderSync(c){
+  c.innerHTML=`
+    <h2><span class="ic">🔄</span> همگام‌سازی صندوق</h2>
+    <div class="card">
+      <p style="font-size:12.5px;color:var(--muted);">موجودی فعلی: <b style="color:var(--gold-lt)">${fmt(DB.fund)}</b></p>
+      <input id="s_amount" placeholder="مبلغ جدید صندوق">
+      <button onclick="syncFund()">به‌روزرسانی</button>
+    </div>
+  `;
+}
+function syncFund(){ DB.fund=+document.getElementById('s_amount').value||0; saveDB(DB); showPage('sync'); }
+
+/* ---------- PLANS ---------- */
+function renderPlans(c){
+  c.innerHTML=`
+    <h2><span class="ic">🗓️</span> برنامه‌های آینده</h2>
+    <div class="card">
+      <input id="p_title" placeholder="عنوان برنامه">
+      <select id="p_priority"><option>بالا</option><option>متوسط</option><option>پایین</option></select>
+      <div class="row"><input id="p_cost" placeholder="هزینه تخمینی"><input id="p_date" type="date"></div>
+      <button onclick="addPlan()">افزودن برنامه</button>
+    </div>
+    <div id="planList"></div>
+  `;
+  renderPlanList();
+}
+function addPlan(){
+  DB.plans.push({title:document.getElementById('p_title').value, priority:document.getElementById('p_priority').value,
+    cost:document.getElementById('p_cost').value, date:document.getElementById('p_date').value});
+  saveDB(DB); renderPlans(document.getElementById('pageContainer'));
+}
+function renderPlanList(){
+  const order={'بالا':0,'متوسط':1,'پایین':2};
+  const sorted=[...DB.plans].sort((a,b)=>order[a.priority]-order[b.priority]);
+  document.getElementById('planList').innerHTML=sorted.map(p=>`
+    <div class="unitCard">📌 ${p.title} — اولویت ${p.priority} — ${fmt(p.cost)} — ${faDateShort(p.date)}
+      <div class="row2"><button class="sm danger" onclick="delPlan(${DB.plans.indexOf(p)})">🗑 حذف</button></div>
+    </div>`).join('') || '<div class="empty">برنامه‌ای ثبت نشده.</div>';
+}
+function delPlan(i){ DB.plans.splice(i,1); saveDB(DB); renderPlans(document.getElementById('pageContainer')); }
+
+/* ---------- MEETING MINUTES ---------- */
+function renderMinutes(c){
+  c.innerHTML=`
+    <h2><span class="ic">📝</span> صورت‌جلسه‌ها</h2>
+    <div class="card">
+      <input id="m_no" placeholder="شماره ثبت">
+      <input id="m_date" type="date" value="${todayStr()}">
+      <input id="m_file" type="file" accept="image/*">
+      <button onclick="addMinute()">آپلود صورت‌جلسه</button>
+    </div>
+    <div id="minutesList"></div>
+  `;
+  renderMinutesList();
+}
+function addMinute(){
+  const file=document.getElementById('m_file').files[0];
+  const no=document.getElementById('m_no').value, date=document.getElementById('m_date').value||todayStr();
+  if(!file) return alert('یک تصویر انتخاب کنید');
+  const reader=new FileReader();
+  reader.onload=function(ev){ DB.minutes.push({no,date,img:ev.target.result}); saveDB(DB); renderMinutes(document.getElementById('pageContainer')); };
+  reader.readAsDataURL(file);
+}
+function renderMinutesList(){
+  document.getElementById('minutesList').innerHTML=DB.minutes.map((m,i)=>`
+    <div class="minutesCard"><img class="thumb" src="${m.img}"><div style="flex:1;font-size:12.5px;">شماره ${m.no}<br><span style="color:var(--muted)">${faDateShort(m.date)}</span></div>
+      <button class="sm danger" onclick="delMinute(${i})">🗑</button></div>`).join('') || '<div class="empty">صورت‌جلسه‌ای ثبت نشده.</div>';
+}
+function delMinute(i){ DB.minutes.splice(i,1); saveDB(DB); renderMinutes(document.getElementById('pageContainer')); }
+</script>
+</body>
+</html>
